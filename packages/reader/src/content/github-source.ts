@@ -51,6 +51,12 @@ export type GitHubSourceOptions = {
   cache?: DocumentCache
   /** 可选 token，仅用于提高 API 限流额度（60/小时 → 5000/小时） */
   token?: string
+  /**
+   * 本机部署：设置后正文**优先**从 `${documentBaseUrl}/${path}` 取（通常是同源 `/courses/`），
+   * 失败仍走远程回退链。结构仍来自 manifest / 文件树，不受它影响。
+   * 自托管镜像站用：运行时完全不碰 jsDelivr / api.github.com / raw。
+   */
+  documentBaseUrl?: string
 }
 
 const API = 'https://api.github.com'
@@ -58,7 +64,7 @@ const CDN = 'https://cdn.jsdelivr.net/gh'
 const RAW = 'https://raw.githubusercontent.com'
 
 export function createGitHubSource(opts: GitHubSourceOptions): ContentSource {
-  const { owner, repo, ref = 'main', manifestUrl, prefer = 'manifest', cache, token } = opts
+  const { owner, repo, ref = 'main', manifestUrl, prefer = 'manifest', cache, token, documentBaseUrl } = opts
 
   type CourseStructure = { courses: ManifestCourse[]; categories: CourseCatalogCategory[] }
   let structurePromise: Promise<CourseStructure> | null = null
@@ -140,11 +146,15 @@ export function createGitHubSource(opts: GitHubSourceOptions): ContentSource {
 
   async function fetchContent(path: string, signal?: AbortSignal): Promise<string> {
     const encoded = path.split('/').map(encodeURIComponent).join('/')
-    const attempts: { name: string; url: string; headers?: Record<string, string> }[] = [
+    const attempts: { name: string; url: string; headers?: Record<string, string> }[] = []
+
+    // 本机正文基址放最前：自托管部署的正文取数不碰任何远程域名（见 GitHubSourceOptions.documentBaseUrl）
+    if (documentBaseUrl) attempts.push({ name: '本机', url: `${documentBaseUrl}/${encoded}` })
+    attempts.push(
       { name: 'jsDelivr', url: `${CDN}/${owner}/${repo}@${ref}/${encoded}` },
       { name: 'api', url: `${API}/repos/${owner}/${repo}/contents/${encoded}?ref=${ref}`, headers: authHeaders({ accept: 'application/vnd.github.raw' }) },
       { name: 'raw', url: `${RAW}/${owner}/${repo}/${ref}/${encoded}` },
-    ]
+    )
 
     const errors: string[] = []
     for (const a of attempts) {

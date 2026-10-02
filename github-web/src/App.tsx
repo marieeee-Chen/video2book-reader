@@ -1,7 +1,8 @@
 /**
  * 静态阅读站：书架 → 课程（册 / 笔记 / 逐字稿）→ 阅读。
  *
- * 定位：纯阅读站。零 AI、零划词、零记录（进度只在内存，关闭即清空）。
+ * 定位：纯阅读站。零 AI、零划词。进度持久化到本机 localStorage，阅读事件经 sendBeacon
+ * 上报到同源 /api/reading（自托管部署由 nginx 反代落账服务聚合进任务中心；无该服务的部署静默失败）。
  *
  * 增强特性：
  *   · 主题明暗切换（System / Light / Dark），本地持久化
@@ -30,6 +31,8 @@ const REPO = (import.meta.env.VITE_COURSES_REPO as string | undefined) ?? 'LINJI
 const REF = (import.meta.env.VITE_COURSES_REF as string | undefined) ?? 'main'
 /** 结构优先从哪来。GitHub Pages 用 runtime（实时），Cloudflare 用 manifest（不碰 api.github.com）。两者互为兜底 */
 const PREFER = (import.meta.env.VITE_CONTENT_PREFER as string | undefined) === 'runtime' ? 'runtime' : 'manifest'
+/** 自托管正文基址（如 /courses）。设置后正文优先同源取，不碰远程 CDN；留空保持原行为 */
+const DOC_BASE = (import.meta.env.VITE_DOCUMENT_BASE as string | undefined) || undefined
 
 const [owner, repo] = REPO.split('/')
 
@@ -66,10 +69,46 @@ function getInitialWidth(): ReadingWidth {
   return localStorage.getItem('cr-width') === 'wide' ? 'wide' : 'standard'
 }
 
+// —— 阅读进度:本地持久化 + 自托管落账 ——
+// 原 v0 设计是"进度只在内存"(docs/03 §11.1);应用户要求放宽:已读状态进 localStorage,
+// 阅读事件经 sendBeacon 打到同源 /api/reading(自托管部署由 nginx 反代落账服务),
+// 没有该服务的部署会静默失败,不影响阅读。不含任何第三方上报。
+const READ_KEY = 'cr-progress-v1'
+type ReadVolumes = Record<string, Set<string>>
+
+function loadReadVolumes(): ReadVolumes {
+  try {
+    const raw = JSON.parse(localStorage.getItem(READ_KEY) ?? '{}') as Record<string, string[]>
+    return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, new Set(v)]))
+  } catch {
+    return {}
+  }
+}
+
+function saveReadVolumes(v: ReadVolumes) {
+  try {
+    localStorage.setItem(READ_KEY, JSON.stringify(Object.fromEntries(Object.entries(v).map(([k, s]) => [k, [...s]]))))
+  } catch { /* 存储满/隐私模式:进度退化为仅内存 */ }
+}
+
+/** 阅读事件落账:documentId + 最深章节 + 滚动百分比。fire-and-forget。 */
+function beaconReading(documentId: string, chapterIndex: number, percent: number) {
+  if (!documentId) return
+  const payload = JSON.stringify({ documentId, chapterIndex, percent, ts: Date.now() })
+  try {
+    navigator.sendBeacon(`${import.meta.env.BASE_URL}api/reading`, new Blob([payload], { type: 'application/json' }))
+  } catch { /* 无落账服务的部署:静默 */ }
+}
+
 export function App() {
   const [route, setRoute] = useState<Route>(parseHash)
-  /** 进度只在内存：静态站不落盘（docs/03 §11.1） */
-  const [readVolumes, setReadVolumes] = useState<Record<string, Set<string>>>({})
+  /** 已读状态:localStorage 持久化(刷新不丢),阅读事件另经落账服务聚合 */
+  const [readVolumes, setReadVolumes] = useState<ReadVolumes>(loadReadVolumes)
+  useEffect(() => { saveReadVolumes(readVolumes) }, [readVolumes])
+  const deepChapterRef = useRef<Map<string, number>>(new Map())
+  const lastBeaconRef = useRef<Map<string, number>>(new Map())
+  const currentDocRef = useRef('')
+  const lastPercentRef = useRef(0)
   /** 阅读页顶栏要显示"在读哪一册"，从内存结构直接查 */
   const [docTitle, setDocTitle] = useState('')
   const [zip, setZip] = useState<(Progress & { title: string }) | null>(null)
@@ -128,17 +167,26 @@ export function App() {
       manifestUrl: `${import.meta.env.BASE_URL}manifest.json`,
       prefer: PREFER,
       cache: contentCache,
+      documentBaseUrl: DOC_BASE,
     })
   }, [])
 
   // 只在内存里记「这册读过」，用于书架进度与课程页高亮
-  const onChapterEnter = useCallback((documentId: string) => {
+  const onChapterEnter = useCallback((documentId: string, chapterIndex: number) => {
     const courseId = courseIdFromDocumentId(documentId)
     if (!courseId) return
+    deepChapterRef.current.set(documentId, Math.max(deepChapterRef.current.get(documentId) ?? 0, chapterIndex))
+    currentDocRef.current = documentId
+    const now = Date.now()
+    if (now - (lastBeaconRef.current.get(documentId) ?? 0) > 30_000) {
+      lastBeaconRef.current.set(documentId, now)
+      beaconReading(documentId, chapterIndex, 0)
+    }
     setReadVolumes((prev) => {
       const set = new Set(prev[courseId] ?? [])
       if (set.has(documentId)) return prev
       set.add(documentId)
+      saveReadVolumes({ ...prev, [courseId]: set })
       return { ...prev, [courseId]: set }
     })
   }, [])
@@ -159,6 +207,7 @@ export function App() {
         const max = body.scrollHeight - body.clientHeight
         if (max > 0) {
           const pct = Math.min(100, Math.max(0, Math.round((body.scrollTop / max) * 100)))
+          lastPercentRef.current = pct
           setReadPercent(pct)
         }
       }
@@ -172,6 +221,25 @@ export function App() {
       cleanup?.()
     }
   }, [route])
+
+  // 离开阅读页 / 关页:把该册的最深章节与最终滚动比例落账
+  useEffect(() => {
+    if (route.view === 'reader') return
+    const doc = currentDocRef.current
+    if (!doc) return
+    beaconReading(doc, deepChapterRef.current.get(doc) ?? 0, lastPercentRef.current)
+    currentDocRef.current = ''
+    lastPercentRef.current = 0
+  }, [route])
+
+  useEffect(() => {
+    const onHide = () => {
+      const doc = currentDocRef.current
+      if (doc) beaconReading(doc, deepChapterRef.current.get(doc) ?? 0, lastPercentRef.current)
+    }
+    window.addEventListener('pagehide', onHide)
+    return () => window.removeEventListener('pagehide', onHide)
+  }, [])
 
   // 阅读页标题查询
   useEffect(() => {
