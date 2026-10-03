@@ -12,6 +12,7 @@ import {
   countCategory,
   findCategoryAncestors,
   groupCourses,
+  isReadableCourse,
   type CategoryNode,
 } from '../content/category-tree.ts'
 import type { CourseCatalogCategory, CourseSummary, ContentSource } from '../types.ts'
@@ -21,6 +22,9 @@ export type BookshelfProps = {
   onOpen: (courseId: string) => void
   /** 各课的已读册数（由调用方提供；阅读器本身不存任何东西） */
   progress?: Record<string, number>
+  /** 只看可读（有册或有笔记）的初值；仅挂载时读取，变更经 onReadableOnlyChange 通知宿主 */
+  defaultReadableOnly?: boolean
+  onReadableOnlyChange?: (next: boolean) => void
 }
 
 type State =
@@ -34,15 +38,30 @@ function treeDomId(categoryId: string): string {
   return `shelf-tree-${categoryId.replace(/[^a-zA-Z0-9_-]/g, '_')}`
 }
 
-export function Bookshelf({ contentSource, onOpen, progress = {} }: BookshelfProps) {
+export function Bookshelf({
+  contentSource,
+  onOpen,
+  progress = {},
+  defaultReadableOnly = true,
+  onReadableOnlyChange,
+}: BookshelfProps) {
   const [state, setState] = useState<State>({ phase: 'loading' })
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set())
   const [navCollapsed, setNavCollapsed] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [readableOnly, setReadableOnly] = useState(defaultReadableOnly)
   const initializedTree = useRef(false)
   const navRef = useRef<HTMLElement>(null)
   const mobileToggleRef = useRef<HTMLButtonElement>(null)
+
+  const updateReadableOnly = useCallback(
+    (next: boolean) => {
+      setReadableOnly(next)
+      onReadableOnlyChange?.(next)
+    },
+    [onReadableOnlyChange],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -63,13 +82,18 @@ export function Bookshelf({ contentSource, onOpen, progress = {} }: BookshelfPro
   const categories = state.phase === 'ready' ? state.categories : []
   const tree = useMemo(() => buildCategoryTree(categories), [categories])
   const branchIds = useMemo(() => collectBranchIds(tree), [tree])
-  const groups = useMemo(
-    () => groupCourses(courses, selectedCategoryId, categories),
-    [courses, selectedCategoryId, categories],
-  )
-  const visibleCourses = useMemo(
+  // 分类内全量（侧栏同口径的 Y）与可读过滤后的可见集（列表口径的 X）
+  const inCategory = useMemo(
     () => courses.filter((course) => categoryContainsCourse(course, selectedCategoryId)),
     [courses, selectedCategoryId],
+  )
+  const visibleCourses = useMemo(
+    () => inCategory.filter((course) => !readableOnly || isReadableCourse(course)),
+    [inCategory, readableOnly],
+  )
+  const groups = useMemo(
+    () => groupCourses(visibleCourses, selectedCategoryId, categories),
+    [visibleCourses, selectedCategoryId, categories],
   )
   const courseOrder = useMemo(() => new Map(courses.map((course, index) => [course.id, index])), [courses])
   const selectedAncestors = useMemo(
@@ -227,20 +251,33 @@ export function Bookshelf({ contentSource, onOpen, progress = {} }: BookshelfPro
 
         <main className="shelf-main">
           <header className="shelf-head">
-            <h1>{selectedName}</h1>
-            {selectedPath.length > 0 && (
-              <nav className="shelf-breadcrumb" aria-label="当前分类路径">
-                {selectedPath.map((name, index) => (
-                  <span key={`${name}-${index}`}>
-                    {index > 0 && <span aria-hidden="true"> / </span>}
-                    {name}
-                  </span>
-                ))}
-              </nav>
-            )}
+            <div className="shelf-head-main">
+              <div className="shelf-head-titles">
+                <h1>{selectedName}</h1>
+                {selectedPath.length > 0 && (
+                  <nav className="shelf-breadcrumb" aria-label="当前分类路径">
+                    {selectedPath.map((name, index) => (
+                      <span key={`${name}-${index}`}>
+                        {index > 0 && <span aria-hidden="true"> / </span>}
+                        {name}
+                      </span>
+                    ))}
+                  </nav>
+                )}
+              </div>
+              <label className="shelf-readable-toggle">
+                <input
+                  type="checkbox"
+                  checked={readableOnly}
+                  onChange={(event) => updateReadableOnly(event.target.checked)}
+                />
+                <span>只看可读</span>
+              </label>
+            </div>
             <p className="shelf-stats" aria-live="polite" aria-atomic="true">
-              {visibleCourses.length} 门课 · {sum((course) => course.volumeCount)} 册模块全书 ·{' '}
-              {sum((course) => course.noteCount)} 篇复习笔记 · {sum((course) => course.subtitleCount)} 份逐字稿
+              显示 {visibleCourses.length} / 共 {inCategory.length} 门 ·{' '}
+              {sum((course) => course.volumeCount)} 册模块全书 · {sum((course) => course.noteCount)} 篇复习笔记 ·{' '}
+              {sum((course) => course.subtitleCount)} 份逐字稿
             </p>
           </header>
 
@@ -256,10 +293,20 @@ export function Bookshelf({ contentSource, onOpen, progress = {} }: BookshelfPro
             </div>
 
             {groups.length === 0 ? (
-              <div className="shelf-filter-empty">
-                <p>这个分类下暂时没有课程。</p>
-                <button type="button" onClick={() => selectCategory(null)}>返回全部课程</button>
-              </div>
+              inCategory.length > 0 && readableOnly ? (
+                <div className="shelf-filter-empty">
+                  <p>当前分类暂无成书或笔记，可关闭筛选查看全部。</p>
+                  <div className="shelf-filter-empty-actions">
+                    <button type="button" onClick={() => updateReadableOnly(false)}>关闭筛选</button>
+                    <button type="button" onClick={() => selectCategory(null)}>返回全部课程</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="shelf-filter-empty">
+                  <p>这个分类下暂时没有课程。</p>
+                  <button type="button" onClick={() => selectCategory(null)}>返回全部课程</button>
+                </div>
+              )
             ) : (
               groups.map((group) => (
                 <section className="shelf-group" key={group.id}>

@@ -91,6 +91,18 @@ function saveReadVolumes(v: ReadVolumes) {
   } catch { /* 存储满/隐私模式:进度退化为仅内存 */ }
 }
 
+// —— 书架「只看可读」偏好:同样本地持久化。缺失/异常默认开 ——
+const READABLE_KEY = 'cr-shelf-readable-v1'
+
+function loadReadableOnly(): boolean {
+  try {
+    const saved = localStorage.getItem(READABLE_KEY)
+    return saved === null ? true : saved === '1'
+  } catch {
+    return true
+  }
+}
+
 /** 阅读事件落账:documentId + 最深章节 + 滚动百分比。fire-and-forget。 */
 function beaconReading(documentId: string, chapterIndex: number, percent: number) {
   if (!documentId) return
@@ -104,6 +116,14 @@ export function App() {
   const [route, setRoute] = useState<Route>(parseHash)
   /** 已读状态:localStorage 持久化(刷新不丢),阅读事件另经落账服务聚合 */
   const [readVolumes, setReadVolumes] = useState<ReadVolumes>(loadReadVolumes)
+  /** 只看可读:内存态为准,写存储失败不回退(Bookshelf 卸载重挂时取最新内存值) */
+  const [readableOnly, setReadableOnly] = useState(loadReadableOnly)
+  const onReadableOnlyChange = useCallback((next: boolean) => {
+    setReadableOnly(next)
+    try {
+      localStorage.setItem(READABLE_KEY, next ? '1' : '0')
+    } catch { /* 保存失败:保留本次内存选择 */ }
+  }, [])
   useEffect(() => { saveReadVolumes(readVolumes) }, [readVolumes])
   const deepChapterRef = useRef<Map<string, number>>(new Map())
   const lastBeaconRef = useRef<Map<string, number>>(new Map())
@@ -455,6 +475,8 @@ export function App() {
             contentSource={contentSource}
             onOpen={(courseId) => go({ view: 'course', courseId, transcripts: false })}
             progress={Object.fromEntries(Object.entries(readVolumes).map(([k, v]) => [k, v.size]))}
+            defaultReadableOnly={readableOnly}
+            onReadableOnlyChange={onReadableOnlyChange}
           />
         )}
         {route.view === 'course' && (

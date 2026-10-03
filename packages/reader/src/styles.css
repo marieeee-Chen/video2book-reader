@@ -1145,6 +1145,40 @@ details.callout[open] > summary {
   margin: 0 auto 2rem;
 }
 
+.shelf-main .shelf-head-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.shelf-head-titles {
+  min-width: 0;
+}
+
+.shelf-readable-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--fg-2);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.shelf-readable-toggle input {
+  accent-color: var(--accent, currentColor);
+}
+
+.shelf-filter-empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
 .shelf-head h1 {
   font-size: 1.4rem;
   margin: 0 0 0.35rem;

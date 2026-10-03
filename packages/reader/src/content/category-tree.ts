@@ -69,14 +69,28 @@ export function countCategory(courses: CourseSummary[], categoryId: string): num
   return new Set(courses.filter((course) => categoryContainsCourse(course, categoryId)).map((course) => course.id)).size
 }
 
+/** 可读 = 已有模块全书或复习笔记；纯逐字稿语料卡不算。 */
+export function isReadableCourse(course: Pick<CourseSummary, 'volumeCount' | 'noteCount'>): boolean {
+  return course.volumeCount > 0 || course.noteCount > 0
+}
+
 /** 将可见课程按当前分类视图分组；同一课程在一个视图中只出现一次。 */
 export function groupCourses(
   courses: CourseSummary[],
   selectedCategoryId: string | null,
   categories: CourseCatalogCategory[],
 ): CourseGroup[] {
-  const categoryOrder = new Map(categories.map((category, index) => [category.id, index]))
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]))
+  // 组序 = 分类树 DFS 序（与侧栏导航一致）。categories 数组序会被上游追加打乱，不可作排序键。
+  const dfsOrder = new Map<string, number>()
+  const walk = (nodes: CategoryNode[]) => {
+    for (const node of nodes) {
+      dfsOrder.set(node.id, dfsOrder.size)
+      walk(node.children)
+    }
+  }
+  walk(buildCategoryTree(categories))
+
   const groups = new Map<string, CourseSummary[]>()
 
   for (const course of courses) {
@@ -99,8 +113,8 @@ export function groupCourses(
       courses: groupCourses,
     }))
     .sort((a, b) => {
-      const ai = categoryOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER
-      const bi = categoryOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER
+      const ai = dfsOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER
+      const bi = dfsOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER
       return ai - bi || a.name.localeCompare(b.name, 'zh')
     })
 }
