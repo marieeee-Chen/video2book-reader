@@ -67,3 +67,9 @@ docs/              设计与决策文档
 阅读是主功能，AI 是次要功能。**`packages/reader` 不得依赖 agent、插件、端口实现或任何壳**——
 静态版就是靠"换掉 2 个端口 + 换 `StorePort` 装配"得到的，阅读功能一行不改。
 详见 [docs/00 §4 结构不变量](docs/00-架构总纲.md)。
+
+## 本机图片交付（2026-10-05）
+
+阅读器根据内容源的 `documentUrl` 解析 Markdown 相对图片路径，图片加载失败时才显示占位。
+自托管正文使用 `VITE_DOCUMENT_BASE`；公众号发布器为正文目录提供对应 assets。
+可用 `node scripts/check-images.mjs` 检查 URL 解析，浏览器验收须核对真实图片加载、断图和移动端宽度。

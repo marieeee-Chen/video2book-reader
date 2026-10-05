@@ -1456,3 +1456,10 @@ details.callout[open] > summary {
     transition: none;
   }
 }
+
+/* Images keep their aspect ratio and fit the reading column on mobile. */
+.reader-image {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+}

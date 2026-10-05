@@ -173,6 +173,10 @@ export function createGitHubSource(opts: GitHubSourceOptions): ContentSource {
   }
 
   return {
+    documentUrl(id: string): string {
+      const base = documentBaseUrl?.replace(/\/$/, '') ?? `${CDN}/${owner}/${repo}@${ref}`
+      return `${base}/${id.split('/').map(encodeURIComponent).join('/')}`
+    },
     async listCourses(): Promise<CourseSummary[]> {
       return (await getStructure()).courses.map(toCourseSummary)
     },

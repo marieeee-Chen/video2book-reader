@@ -4,10 +4,13 @@
  * 这里承担三件按需发生的事：
  *   1. 代码高亮（懒加载，见下）
  *   2. 学习要素卡片的视觉分类（callout-*，样式在 styles.css）
- *   3. 坏引用与非预期内容的优雅降级（全库只有 2 处图片引用且都是坏路径）
+ *   3. 图片加载及坏引用的降级
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { imageUrl } from '../markdown/image-url.ts'
+
+export const DocumentUrlContext = createContext<string | undefined>(undefined)
 
 /** 语言别名映射。来源：全库围栏语言的实测分布（docs/03 §5.1） */
 const LANG_ALIASES: Record<string, string> = {
@@ -221,8 +224,15 @@ export function Table({ children }: { children?: ReactNode }) {
   )
 }
 
-/** 图片：全库几乎都是坏引用，降级成占位而不是碎图图标（docs/03 §7） */
+/** Resolve relative images from their document; show a fallback only on failure. */
 export function Image({ src, alt }: { src?: string; alt?: string }) {
+  const documentUrl = useContext(DocumentUrlContext)
+  const resolved = imageUrl(src, documentUrl, typeof location === 'undefined' ? 'https://localhost/' : location.href)
+  const [failedUrl, setFailedUrl] = useState<string | undefined>()
+  if (resolved && failedUrl !== resolved) {
+    return <img className="reader-image" src={resolved} alt={alt ?? ''} loading="lazy"
+      onError={() => setFailedUrl(resolved)} />
+  }
   return (
     <span className="broken-image" title={src}>
       {alt ? `${alt} · ` : ''}

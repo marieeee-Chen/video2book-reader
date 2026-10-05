@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { splitDocument, type SplitDocument } from '../model/split-document.ts'
 import { createAnchorResult } from '../markdown/transform.ts'
 import { renderPart } from '../markdown/render.ts'
+import { DocumentUrlContext } from './components.tsx'
 import type { BlockContext, ContentSource, DocumentId, OutlineNode, ReaderApi, ReadingEvents, ReaderSlots } from '../types.ts'
 import { DocSearch, type SearchBlock } from './DocSearch.tsx'
 
@@ -258,7 +259,9 @@ export function Reader({ contentSource, documentId, events, slots, apiRef, initi
 
       <article className="reader-body" ref={bodyRef}>
         {slots?.toolbarSlot}
-        {rendered?.nodes}
+        <DocumentUrlContext.Provider value={contentSource.documentUrl?.(documentId)}>
+          {rendered?.nodes}
+        </DocumentUrlContext.Provider>
         <footer className="reader-foot">
           <span>{chapterCount} 章 · 读完</span>
         </footer>
