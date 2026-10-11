@@ -28,12 +28,27 @@ function SlotHost({ registry, slot }: { registry: Registry<SlotContribution>; sl
 function ModelSettings({ save }: { save: ShellProps['setModel'] }) {
   const [protocol, setProtocol] = useState<CustomModel['protocol']>('openai-chat-completions')
   const [endpoint, setEndpoint] = useState(''), [model, setName] = useState(''), [key, setKey] = useState(''), [status, setStatus] = useState('')
-  return <form className="model-settings" onSubmit={e => { e.preventDefault(); setStatus('保存中…'); void save({ id: 'custom', endpoint, model, protocol }, key).then(() => { setKey(''); setStatus('已保存。可以回到阅读页提问。') }).catch(() => setStatus('保存失败，请检查端点和安全存储状态。')) }}>
+  const [optionsText, setOptionsText] = useState('')
+  return <form className="model-settings" onSubmit={e => {
+    e.preventDefault()
+    let options: Record<string, unknown> | undefined
+    try {
+      if (optionsText.trim()) {
+        const parsed: unknown = JSON.parse(optionsText)
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('object required')
+        options = parsed as Record<string, unknown>
+        if (Object.keys(options).some(name => /^(api[_-]?key|authorization|token|secret|password)$/i.test(name))) throw new Error('credential options forbidden')
+      }
+    } catch { setStatus('模型参数须为 JSON 对象；密钥请填在独立密钥栏。'); return }
+    setStatus('保存中…')
+    void save({ id: 'custom', endpoint, model, protocol, ...(options ? { options } : {}) }, key).then(() => { setKey(''); setStatus('已保存。可以回到阅读页提问。') }).catch(() => setStatus('保存失败，请检查端点和安全存储状态。'))
+  }}>
     <h2>自定义模型</h2><p>模型可选。端点与模型名保存在本机，密钥单独保存。</p>
     <label>协议<select value={protocol} onChange={e => setProtocol(e.target.value as CustomModel['protocol'])}><option value="openai-chat-completions">Chat Completions</option><option value="anthropic-messages">Anthropic Messages</option><option value="google-native">Google Native</option></select></label>
     <label>端点<Input value={endpoint} onChange={e => setEndpoint(e.target.value)} type="url" required placeholder="输入自己的服务地址" /></label>
     <label>模型<Input value={model} onChange={e => setName(e.target.value)} required /></label>
     <label>密钥<Input value={key} onChange={e => setKey(e.target.value)} type="password" autoComplete="off" /></label>
+    <label>可选模型参数（JSON）<textarea value={optionsText} onChange={e => setOptionsText(e.target.value)} rows={3} placeholder={'例如 {"reasoning_effort":"low"}'} /></label>
     <Button type="submit">保存</Button><p role="status">{status}</p>
   </form>
 }

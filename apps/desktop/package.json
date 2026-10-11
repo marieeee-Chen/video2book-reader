@@ -6,7 +6,7 @@
   "description": "PC 桌面壳（Tauri 2）：提供能力端口的实现 + 窗口 / 托盘 / 更新",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node ../../scripts/stage-demo-content.mjs dist",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "tauri": "tauri"

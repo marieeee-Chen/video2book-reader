@@ -5,7 +5,7 @@
 .shell-view { padding: 24px; display: flex; overflow: auto; }
 .model-settings { display: flex; flex-direction: column; gap: 18px; width: min(520px, 100%); }
 .model-settings label { display: grid; gap: 6px; }
-.model-settings input, .model-settings select, .session-panel textarea, .session-panel select { padding: 9px; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; }
+.model-settings input, .model-settings select, .model-settings textarea, .session-panel textarea, .session-panel select { padding: 9px; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; }
 .session-panel { width: 350px; max-width: 90vw; display: flex; flex-direction: column; padding: 14px; gap: 10px; border-left: 1px solid var(--line); overflow: auto; }
 .session-panel header { display: flex; justify-content: space-between; }
 .session-items { flex: 1; min-height: 80px; overflow: auto; }

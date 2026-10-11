@@ -63,3 +63,21 @@ updater 默认 feature 关闭。使用 `scripts/updater-config.mjs` 生成公钥
 目标设备须逐项归档：真实逐字流、首字节前/中途停止、工具往返、重启恢复线程/密钥、密钥删除与 vault 锁定、离线阅读、托盘恢复；Windows 新装/重装与签名升级；Android WebView/小屏/后台恢复。编译产物不代替这些运行证据。
 
 实现参考：[Tauri 原生构建流水线](https://v2.tauri.app/distribute/pipelines/github/)、[Tauri Stronghold](https://v2.tauri.app/plugin/stronghold/)、[Tauri updater](https://v2.tauri.app/plugin/updater/)、[Capacitor Android](https://capacitorjs.com/docs/android)、[Capacitor 8 升级要求](https://capacitorjs.com/docs/updating/8-0)。
+
+## 真实短课验收与内置演示（2026-10-11 后续）
+
+后续已用 BV1zb4y1a7JU / P01 完成当前整课编辑审核、正式本地课程包、固定提交、同锁重建和 HTTP 验收，公开保留来源限制。真实 GLM-5.3 已通过本章总结、两项学习工具往返、版本引用、中途停止与恢复、真实用量及会话序列化；另已验证真实 fetch 发起后首字节前取消。这些证据位于 `../acceptance/20261011-hard-brain-real/`，不是原回环模型夹具。
+
+本轮在 `/tmp` 安装了经官方 SHA 校验的 JDK21、Android SDK36，安卓原生插件和内置示范课 debug APK 已实际编译。前述“缺 JDK/SDK、未编译 APK”是首轮基线，后续已补齐；Windows 编译、两个平台的设备运行、安全存储恢复、后台恢复及签名升级仍未关闭。
+
+`READER_DEMO_RELEASE` 可选择一份已验收、带 `build-manifest.json` 的冻结发布目录；桌面/安卓 build 的 `stage-demo-content.mjs` 先逐文件核验完整清单，再把课程独立复制到 dist/demo 的版本路径。搭配 `VITE_RELEASE_MANIFEST=/demo/manifest.json`，原生包首装即可读取内置课程，无需配置书架服务器，也不装入生产工作区、音频、任务书、审核证据或密钥。未设置该变量时保留常规构建行为。
+
+Windows 在具备 Node22+/pnpm、Rust MSVC/Build Tools、WebView2 的电脑上运行：
+
+```powershell
+.\scripts\build-windows-demo.ps1 -ReleaseDirectory 'C:\验收\content'
+```
+
+脚本构建 NSIS 并输出包含课程批次和安装包 SHA 的 `windows-build-receipt.json`；本机 Linux 没有执行过该 Windows 构建。分发的源码包按固定 reader 提交导出，带 `native-source.json`，无需自建 Git 远端；没有附带 node_modules 或密钥。
+
+设置新增可选模型参数 JSON，保存在模型配置中并参与模型身份；数组、无效 JSON 和凭据字段拒绝保存，密钥仍走 SecretPort。GLM 实测参数为 `{"reasoning_effort":"low","max_tokens":4096,"tool_stream":true}`。设备验收表和安装步骤见上述真实课程记录。

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node ../../scripts/stage-demo-content.mjs dist",
     "typecheck": "tsc --noEmit",
     "android:add": "cap add android && node scripts/sync-native.mjs",
     "android:sync": "cap sync android && node scripts/sync-native.mjs",
