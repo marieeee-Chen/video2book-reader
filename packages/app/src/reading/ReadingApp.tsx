@@ -193,7 +193,7 @@ export function ReadingApp({ source, readerSlots, readerApiRef, onDocumentChange
   const contentSource: ContentSource = useMemo(() => {
     if (source) return source
     if (!owner || !repo) throw new Error(`VITE_COURSES_REPO 格式应为 owner/name，收到：${REPO}`)
-    if (!PREVIEW) return createReleaseSource({ manifestUrl: `${import.meta.env.BASE_URL}manifest.json`, cache: contentCache, indexCache, assetCache })
+    if (!PREVIEW) return createReleaseSource({ manifestUrl: import.meta.env.VITE_RELEASE_MANIFEST || `${import.meta.env.BASE_URL}manifest.json`, cache: contentCache, indexCache, assetCache })
     return createGitHubSource({
       owner,
       repo,

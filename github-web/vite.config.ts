@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import { offlineShell } from '../scripts/offline.ts'
+import { pwaAssets, staticDemo } from '../scripts/pwa.ts'
 
 const here = (p: string) => fileURLToPath(new URL(p, import.meta.url))
 
@@ -15,7 +16,8 @@ export default defineConfig({
   // GitHub Pages 的项目页部署在 /<repo>/ 子路径下，Cloudflare Pages 在根路径。
   // 用哈希路由（#/v/...）因此不需要 SPA 回退配置，只需要 base 正确。
   base: process.env.VITE_BASE ?? '/',
-  plugins: [react(), offlineShell(here('./dist'))],
+  publicDir: process.env.READER_DEMO_RELEASE ? false : 'public',
+  plugins: [react(), pwaAssets(here('./pwa')), staticDemo(here('./dist'), here('../scripts/stage-demo-content.mjs')), offlineShell(here('./dist'), !!process.env.READER_DEMO_RELEASE)],
   resolve: {
     alias: [
       { find: '@app/reader/styles.css', replacement: resolve(here('.'), '../packages/reader/src/styles.css') },
@@ -26,7 +28,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    target: 'chrome110',
+    target: ['chrome110', 'safari16.4'],
     sourcemap: true,
   },
 })

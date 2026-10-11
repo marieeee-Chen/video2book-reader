@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 /** Build an immutable shell cache. Content is verified separately by ReleaseSource. */
-export function offlineShell(out: string) {
+export function offlineShell(out: string, includeDemo = false) {
   return { name: 'offline-shell', closeBundle() {
     const files: string[] = ['index.html']
     function walk(dir: string, prefix = '') {
@@ -13,6 +13,14 @@ export function offlineShell(out: string) {
       }
     }
     walk(join(out, 'assets'), 'assets/')
+    if (includeDemo) {
+      const staged = JSON.parse(readFileSync(join(out, 'demo/staged-content.json'), 'utf8')) as { files: Record<string, unknown> }
+      files.push(...Object.keys(staged.files).map(path => 'demo/' + path))
+    }
+    // Optional install assets emitted by the static web shell.
+    for (const entry of readdirSync(out, { withFileTypes: true })) {
+      if (entry.isDirectory() && entry.name === 'pwa') walk(join(out, 'pwa'), 'pwa/')
+    }
     const sha = createHash('sha256'); for (const file of files.sort()) { sha.update(file); sha.update(readFileSync(join(out, file))) }
     const version = sha.digest('hex')
     writeFileSync(join(out, 'sw.js'), `// Generated from this shell's exact bytes. No APIs or model requests are cached.
@@ -26,7 +34,7 @@ self.addEventListener('fetch', event => {
   const path = url.pathname.slice(base.pathname.length);
   if (path.startsWith('api/') || path === 'manifest.json' || path.endsWith('.map')) return;
   if (req.mode === 'navigate') { event.respondWith(fetch(req).catch(() => caches.open(CACHE).then(cache => cache.match(new URL('index.html', base).href)))); return; }
-  if (!FILES.includes(path) && !new RegExp('^releases/[a-zA-Z0-9_.-]+/courses/').test(path)) return;
+  if (!FILES.includes(path) && !new RegExp('^(?:demo/)?releases/[a-zA-Z0-9_.-]+/courses/').test(path)) return;
   event.respondWith(caches.open(CACHE).then(async cache => {
     const hit = await cache.match(req); if (hit) return hit;
     const res = await fetch(req); if (res.ok) await cache.put(req, res.clone()); return res;
