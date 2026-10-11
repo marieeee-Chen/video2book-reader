@@ -1,0 +1,19 @@
+{
+  "name": "@app/plugin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/react": "^19.3.0"
+  }
+}

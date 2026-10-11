@@ -12,10 +12,10 @@
     "gen:manifest": "node scripts/gen-manifest.mjs",
     "check:derive": "node scripts/check-derive.mjs",
     "check:bookshelf": "node scripts/check-bookshelf.mjs",
-    "check:split": "node scripts/check-split.mjs",
+    "check:split": "node scripts/check-split.mjs scripts/fixtures/reader",
     "check:render": "node scripts/check-render.mjs",
     "check:zip": "node scripts/check-zip.mjs",
-    "check": "pnpm check:derive && pnpm check:bookshelf && pnpm check:split && pnpm check:render && pnpm check:zip",
+    "check": "pnpm check:derive && pnpm check:bookshelf && pnpm check:split && pnpm check:render && pnpm check:zip && pnpm check:runtime",
     "verify:boundaries": "node scripts/verify-boundaries.mjs",
     "stream-server": "node scripts/stream-echo-server.mjs",
     "icon": "node scripts/make-icon.mjs",
@@ -24,10 +24,21 @@
     "tauri": "pnpm --filter @app/desktop tauri",
     "build:web": "pnpm --filter @app/github-web build",
     "build": "pnpm --filter @app/desktop build",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "check:runtime": "node --experimental-transform-types scripts/check-runtime.mjs",
+    "build:mobile": "pnpm --filter @app/mobile build",
+    "dev:mobile": "pnpm --filter @app/mobile dev",
+    "audit:split": "node scripts/check-split.mjs"
   },
   "devDependencies": {
+    "@radix-ui/react-slot": "^1.4.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.7.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.0"
   }
 }

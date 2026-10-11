@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
+import { offlineShell } from '../scripts/offline.ts'
 
 const here = (p: string) => fileURLToPath(new URL(p, import.meta.url))
 
@@ -14,7 +15,7 @@ export default defineConfig({
   // GitHub Pages 的项目页部署在 /<repo>/ 子路径下，Cloudflare Pages 在根路径。
   // 用哈希路由（#/v/...）因此不需要 SPA 回退配置，只需要 base 正确。
   base: process.env.VITE_BASE ?? '/',
-  plugins: [react()],
+  plugins: [react(), offlineShell(here('./dist'))],
   resolve: {
     alias: [
       { find: '@app/reader/styles.css', replacement: resolve(here('.'), '../packages/reader/src/styles.css') },

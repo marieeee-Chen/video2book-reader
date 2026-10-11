@@ -24,6 +24,8 @@ import { writeFileSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
+if (process.env.VITE_CONTENT_MODE !== 'preview') throw new Error('实时 Git 文件树仅用于 VITE_CONTENT_MODE=preview；正式构建由发布协调层提供冻结的 v3 manifest。')
+
 const { deriveCourses, parseCourseCatalog, parseRootReadme } = await import('../packages/reader/src/content/derive.ts')
 
 /**

@@ -1,13 +1,29 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "PC 壳的默认权限集。http 之所以开 http://** 与 https://** 全网通配：模型端点由用户自己填（docs/01 §3.2 已定案），无法预先枚举；这是「自定义模型」这个决定的必然代价，不是疏漏。",
-  "windows": ["main"],
+  "description": "PC \u58f3\u7684\u9ed8\u8ba4\u6743\u9650\u96c6\u3002http \u4e4b\u6240\u4ee5\u5f00 http://** \u4e0e https://** \u5168\u7f51\u901a\u914d\uff1a\u6a21\u578b\u7aef\u70b9\u7531\u7528\u6237\u81ea\u5df1\u586b\uff08docs/01 \u00a73.2 \u5df2\u5b9a\u6848\uff09\uff0c\u65e0\u6cd5\u9884\u5148\u679a\u4e3e\uff1b\u8fd9\u662f\u300c\u81ea\u5b9a\u4e49\u6a21\u578b\u300d\u8fd9\u4e2a\u51b3\u5b9a\u7684\u5fc5\u7136\u4ee3\u4ef7\uff0c\u4e0d\u662f\u758f\u6f0f\u3002",
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "http://**" }, { "url": "https://**" }]
-    }
+      "allow": [
+        {
+          "url": "http://**"
+        },
+        {
+          "url": "https://**"
+        }
+      ]
+    },
+    "stronghold:default",
+    "stronghold:allow-remove-store-record",
+    "dialog:allow-open",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive",
+    "fs:allow-app-local-data-read-recursive",
+    "fs:allow-app-local-data-write-recursive"
   ]
 }

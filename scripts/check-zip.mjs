@@ -48,12 +48,13 @@ try {
 
   console.log('\n══ 用 Windows 自带的 Expand-Archive 解压（让操作系统验，不是自己验自己）')
   try {
-    execFileSync(
+    if (process.platform === 'win32') execFileSync(
       'powershell',
       ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${outDir}' -Force`],
       { stdio: 'pipe' },
     )
-    check(true, 'Expand-Archive 解压成功（CRC 与容器结构被 Windows 接受）')
+    else execFileSync('python3', ['-c', 'import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; z.extractall(sys.argv[2])', zipPath, outDir], { stdio: 'pipe' })
+    check(true, `${process.platform === 'win32' ? 'Expand-Archive' : 'Python zipfile'} 独立解压并校验 CRC 成功`)
   } catch (e) {
     check(false, 'Expand-Archive 解压成功', String(e.stderr ?? e).slice(0, 300))
   }

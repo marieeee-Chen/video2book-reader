@@ -1,0 +1,22 @@
+name: Reader contracts
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm check
+        env:
+          CHECK_LOCAL: scripts/fixtures/reader
+      - run: pnpm verify:boundaries
+      - run: pnpm build && pnpm build:mobile
+      - run: pnpm --filter @app/mobile android:sync

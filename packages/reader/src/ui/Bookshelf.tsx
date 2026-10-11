@@ -336,6 +336,7 @@ export function Bookshelf({
                             <span className="shelf-name">
                               <span className="shelf-title">{course.title}</span>
                               {course.direction && <span className="shelf-direction">{course.direction}</span>}
+                              {course.source_role && <span className="shelf-direction">{course.source_role === 'source_archive' ? '存量资料 · 冻结版本' : course.source_role === 'readonly_upstream' ? '上游资料 · 固定版本' : course.delivery_scope === 'full_course' ? '完整交付范围' : '限定交付范围'}</span>}
                             </span>
                             <span className="shelf-num">{course.volumeCount}</span>
                             <span className="shelf-num">{course.noteCount}</span>

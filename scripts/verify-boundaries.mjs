@@ -53,7 +53,7 @@ const rel = (p) => relative(ROOT, p).split(sep).join('/')
  */
 const RULES = {
   plugins: { re: /(^|\/)plugins\//, why: '插件目录（不变量 4）' },
-  agent: { re: /(^|\/)packages\/agent/, why: 'agent 运行时（不变量 5）' },
+  agent: { re: /(^|\/)packages\/agent|^@app\/(agent|plugin|ports|app)$/, why: 'agent 运行时（不变量 5）' },
   workspace: { re: /^@app\//, why: '其他工作区包——阅读器必须是最内层' },
   shell: { re: /^@tauri-apps\/|^@capacitor\/|^electron$/, why: '壳（不变量 3）' },
   nodeBuiltin: { re: /^node:/, why: 'Node 内置模块——这份代码要能在浏览器里跑' },
@@ -65,6 +65,9 @@ const RULES = {
  * 用 `node:path` 天经地义。把构建配置也按运行时代码要求，只会制造噪音。
  */
 const TARGETS = [
+  { name: '共用纯阅读 UI', dir: join(ROOT, 'packages/app/src/reading'), rules: ['plugins', 'agent', 'shell', 'nodeBuiltin'] },
+  { name: 'Agent 核心', dir: join(ROOT, 'packages/agent/src'), rules: ['plugins', 'shell', 'nodeBuiltin'] },
+  { name: '通用插件运行时', dir: join(ROOT, 'packages/plugin/src'), rules: ['plugins', 'shell', 'nodeBuiltin'] },
   {
     name: 'packages/reader',
     dir: join(ROOT, 'packages/reader/src'),
@@ -148,6 +151,7 @@ console.log('\n══ 2/3  删掉 plugins/ 仍能构建')
 const pluginsDir = join(ROOT, 'plugins')
 const stashDir = join(ROOT, 'plugins.__verify_stash__')
 const hasPlugins = existsSync(pluginsDir)
+let movedPlugins = false
 
 if (!hasPlugins) console.log('   · plugins/ 不存在 —— 当前已经是"删掉插件"的状态')
 
@@ -163,12 +167,24 @@ function run(args, label) {
 }
 
 try {
-  if (hasPlugins) renameSync(pluginsDir, stashDir)
+  if (hasPlugins && existsSync(stashDir)) throw new Error('插件校验暂存目录已存在，请先恢复上次校验')
+  if (hasPlugins) { renameSync(pluginsDir, stashDir); movedPlugins = true }
   run(['--filter', '@app/github-web', 'build'], '移开 plugins/ 后 @app/github-web 构建通过')
+  run(['--filter', '@app/desktop', 'build'], '移开 plugins/ 后桌面前端构建通过')
+  run(['--filter', '@app/mobile', 'build'], '移开 plugins/ 后安卓前端构建通过')
 } finally {
   // 无论构建成功与否都要放回去——脚本失败不能顺手弄丢用户的插件源码
-  if (hasPlugins && existsSync(stashDir)) renameSync(stashDir, pluginsDir)
+  if (movedPlugins && existsSync(stashDir)) renameSync(stashDir, pluginsDir)
 }
+const movedCore = []
+try {
+  for (const name of ['agent', 'plugin', 'ports']) {
+    const from = join(ROOT, 'packages', name), to = from + '.__verify_stash__'
+    if (existsSync(to)) throw new Error('核心包校验暂存目录已存在')
+    if (existsSync(from)) { renameSync(from, to); movedCore.push([from, to]) }
+  }
+  run(['--filter', '@app/github-web', 'build'], '移开全部 AI 核心包后纯阅读静态站构建通过')
+} finally { for (const [from, to] of movedCore.reverse()) renameSync(to, from) }
 
 // ─────────────────────────────────────────────────────────────
 // 3) 产物关键词扫描（不变量 5）

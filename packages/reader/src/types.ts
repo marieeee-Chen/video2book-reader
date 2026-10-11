@@ -32,16 +32,41 @@ export type CourseCatalog = {
 /** volume = 模块全书（册）；note = 复习笔记；subtitle = 逐字稿（.txt 或块级 .md，无阅读视图） */
 export type DocumentKind = 'volume' | 'note' | 'subtitle'
 
+export type ContentProvenance = {
+  repo_id: string
+  role: 'owned_publish' | 'readonly_upstream' | 'source_archive'
+  commit?: string
+  path: string
+  github?: { owner: string; name: string }
+}
+export type AssetSummary = { path: string; bytes: number; sha256: string }
+export type PublicationInfo = {
+  course_uid?: string
+  source_role?: ContentProvenance['role']
+  delivery_scope?: string
+  scope_description?: string
+  review_summary?: { decision: string; limitations: string[] }
+  assets?: AssetSummary[]
+  external_assets?: string[]
+  missing_assets?: (string | { path: string; document_id: string })[]
+}
+
 export type DocumentSummary = {
   id: DocumentId
   kind: DocumentKind
   title: string
   originIndex: number
-  /** 字节数。缓存键、性能基准取最大者、「需要联网」判定都用它 */
+  document_uid?: string
+  course_uid?: string
+  product_type?: 'article' | 'textbook' | 'note' | 'transcript' | 'mindmap' | 'asset' | 'legacy_unknown'
+  sha256?: string
+  path?: string
+  source?: ContentProvenance
+  /** 字节数仅用于显示和完整性检查；正文版本以 SHA-256 为准 */
   size: number
 }
 
-export type CourseSummary = {
+export type CourseSummary = PublicationInfo & {
   id: CourseId
   title: string
   /** 展示性文案，best-effort，可为空（docs/03 §2.3） */
@@ -64,7 +89,7 @@ export type CourseDetail = CourseSummary & {
 
 // ---- 构建期生成的 manifest（静态站用；桌面版不用，见 docs/03 §2.3）----
 
-export type ManifestCourse = {
+export type ManifestCourse = PublicationInfo & {
   id: CourseId
   title: string
   direction: string
@@ -83,8 +108,12 @@ export type ManifestCourse = {
 
 export type Manifest = {
   manifestVersion: number
+  release_id?: string
+  content_base?: string
+  reader_compatibility?: { min: number; max: number }
+  aliases?: { courses: Record<string, string>; documents: Record<string, string> }
   generatedAt: string
-  repo: { owner: string; name: string; ref: string }
+  repo?: { owner: string; name: string; ref: string }
   categories: CourseCatalogCategory[]
   stats: { courses: number; volumes: number; notes: number; subtitles: number; bytes: number }
   largestVolume?: { courseId: CourseId; id: DocumentId; size: number }
@@ -108,7 +137,11 @@ export type TitleHit = {
   title: string
 }
 
+export type DocumentInfo = { document: DocumentSummary; courseId: string; release_id?: string }
 export type ContentSource = {
+  documentInfo?(id: DocumentId, signal?: AbortSignal): Promise<DocumentInfo>
+  releaseId?(): Promise<string>
+  loadAsset?(path: string, signal?: AbortSignal): Promise<Uint8Array>
   listCourses(): Promise<CourseSummary[]>
   listCategories(): Promise<CourseCatalogCategory[]>
   loadCourse(id: CourseId): Promise<CourseDetail>

@@ -11,6 +11,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { imageUrl } from '../markdown/image-url.ts'
 
 export const DocumentUrlContext = createContext<string | undefined>(undefined)
+export const ImageLoaderContext = createContext<((src: string, signal: AbortSignal) => Promise<Uint8Array | undefined>) | undefined>(undefined)
 
 /** 语言别名映射。来源：全库围栏语言的实测分布（docs/03 §5.1） */
 const LANG_ALIASES: Record<string, string> = {
@@ -228,9 +229,27 @@ export function Table({ children }: { children?: ReactNode }) {
 export function Image({ src, alt }: { src?: string; alt?: string }) {
   const documentUrl = useContext(DocumentUrlContext)
   const resolved = imageUrl(src, documentUrl, typeof location === 'undefined' ? 'https://localhost/' : location.href)
+  const loader = useContext(ImageLoaderContext)
   const [failedUrl, setFailedUrl] = useState<string | undefined>()
+  const [verifiedImage, setVerifiedImage] = useState<{ original: string; blob: string }>()
+  useEffect(() => {
+    if (!resolved || !loader) return
+    const ac = new AbortController()
+    let objectUrl: string | undefined
+    void loader(resolved, ac.signal).then(bytes => {
+      if (ac.signal.aborted) return
+      if (bytes) {
+        const extension = new URL(resolved).pathname.split('.').pop()?.toLowerCase()
+        const mime = ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', svg: 'image/svg+xml', webp: 'image/webp', gif: 'image/gif' } as Record<string, string>)[extension ?? ''] ?? 'application/octet-stream'
+        objectUrl = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }))
+        setVerifiedImage({ original: resolved, blob: objectUrl })
+      } else setVerifiedImage({ original: resolved, blob: resolved })
+    }).catch(() => { if (!ac.signal.aborted) setFailedUrl(resolved) })
+    return () => { ac.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl) }
+  }, [resolved, loader])
+  if (resolved && loader && failedUrl !== resolved && verifiedImage?.original !== resolved) return <span className="image-loading">正在核对图片…</span>
   if (resolved && failedUrl !== resolved) {
-    return <img className="reader-image" src={resolved} alt={alt ?? ''} loading="lazy"
+    return <img className="reader-image" src={loader ? verifiedImage?.blob : resolved} alt={alt ?? ''} loading="lazy"
       onError={() => setFailedUrl(resolved)} />
   }
   return (

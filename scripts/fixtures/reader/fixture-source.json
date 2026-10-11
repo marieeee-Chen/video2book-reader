@@ -1,0 +1,32 @@
+{
+  "scope": "render-regression-only; no editorial approval",
+  "repository": "LINJIANG12/video2book-courses",
+  "commit": "a27de1cd5c3df4c751d57082b1424ce3155c250f",
+  "files": [
+    {
+      "path": "计算机/前端/pink老师-AI前端入门/textbooks/模块02_HTML5语义结构与Trae AI开发环境（P14-P23）_精读全书.md",
+      "bytes": 145539,
+      "sha256": "c19dc0820bc32589a4b5c45d31c6c868865aeb060044d13672d5699b1a27cfb7"
+    },
+    {
+      "path": "计算机/编程语言/黑马程序员-Python-AI/textbooks/模块09_数据容器：元组、集合、字典与容器选型对比_精读全书.md",
+      "bytes": 97938,
+      "sha256": "332eaa2e43eea645c4c78b1c922e12a155e777e3a19186612585f31997e50ab2"
+    },
+    {
+      "path": "心理与哲学/心理学/变态心理学/北京大学-变态心理学/textbooks/模块06_临床病例深度讨论与跨障碍机制研讨_精读全书.md",
+      "bytes": 134711,
+      "sha256": "d83da0141de8831f635717241b7cac83b1cd758e4cf7fba0745f5b995a3adcf5"
+    },
+    {
+      "path": "计算机/计算机基础/操作系统/南京大学-操作系统原理/textbooks/模块01_操作系统导论与 AI 时代的系统视角_精读全书.md",
+      "bytes": 116857,
+      "sha256": "50a80534be2dd3f25ef02f27b85bcf428f64cd20abacc932e9496a607e8e3f4a"
+    },
+    {
+      "path": "计算机/数据库/MySQL数据库入门到大牛/textbooks/模块18_范式理论、数据库设计与调优策略_精读全书.md",
+      "bytes": 227607,
+      "sha256": "28e8a24ca56dba98538bee4ed64a086b73bb7b5a0e0aaedb74df7832cc0b1439"
+    }
+  ]
+}

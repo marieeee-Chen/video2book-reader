@@ -40,3 +40,8 @@ export { renderPart } from './markdown/render.ts'
 
 export { Reader, type ReaderProps } from './ui/Reader.tsx'
 export { Bookshelf, type BookshelfProps } from './ui/Bookshelf.tsx'
+
+export { createReleaseSource, validateReleaseManifest, safeContentPath, sha256, type ReleaseSourceOptions } from './content/release-source.ts'
+export type { PublicationInfo, AssetSummary, ContentProvenance, DocumentInfo } from './types.ts'
+export { createContentQuery, type ContentQuery } from './content/query.ts'
+export { createLocalDirSource } from './content/local-source.ts'

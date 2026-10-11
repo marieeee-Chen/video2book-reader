@@ -1,0 +1,24 @@
+{
+  "name": "@app/app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/AppShell.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "@app/reader": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.7.0",
+    "@radix-ui/react-slot": "^1.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "@types/react": "^19.3.0"
+  }
+}

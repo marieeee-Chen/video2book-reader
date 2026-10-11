@@ -3,7 +3,7 @@ name = "course-reader"
 version = "0.0.0"
 description = "课程精读 · PC 桌面壳（Tauri 2）"
 edition = "2021"
-rust-version = "1.77"
+rust-version = "1.90"
 
 # 库与二进制分开：库便于将来复用（如 M4 加 updater、托盘），二进制只负责启动
 [lib]
@@ -13,11 +13,20 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+[features]
+updater = ["dep:tauri-plugin-updater"]
+
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 # http 插件：请求从 Rust 侧发出，不受 WebView 的 CORS 限制
 # 这是 docs/00 §3 选 Tauri 的硬理由之一（要连用户自填的 127.0.0.1 端点）
 tauri-plugin-http = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-stronghold = { version = "2", features = ["kdf"] }
+keyring = { version = "3", features = ["windows-native", "apple-native", "sync-secret-service", "crypto-rust"] }
+rand = "0.8"
+tauri-plugin-updater = { version = "2", optional = true }
 
 [profile.release]
 # M4（分发）才用得到；体积压到最小

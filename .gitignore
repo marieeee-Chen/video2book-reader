@@ -1,5 +1,10 @@
 # 依赖
 node_modules/
+.env
+.env.*
+*.jks
+*.keystore
+apps/mobile/android/.gradle/
 .pnpm-store/
 
 # 构建产物

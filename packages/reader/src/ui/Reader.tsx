@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { splitDocument, type SplitDocument } from '../model/split-document.ts'
 import { createAnchorResult } from '../markdown/transform.ts'
 import { renderPart } from '../markdown/render.ts'
-import { DocumentUrlContext } from './components.tsx'
+import { DocumentUrlContext, ImageLoaderContext } from './components.tsx'
 import type { BlockContext, ContentSource, DocumentId, OutlineNode, ReaderApi, ReadingEvents, ReaderSlots } from '../types.ts'
 import { DocSearch, type SearchBlock } from './DocSearch.tsx'
 
@@ -52,6 +52,7 @@ export function Reader({ contentSource, documentId, events, slots, apiRef, initi
   useEffect(() => {
     let cancelled = false
     const ac = new AbortController()
+    currentChapterRef.current = 0
     setState({ phase: 'loading' })
 
     contentSource
@@ -76,7 +77,9 @@ export function Reader({ contentSource, documentId, events, slots, apiRef, initi
     const { tree, parts } = state.split
     const result = createAnchorResult()
 
-    const nodes: ReactNode[] = parts.map((part) => (
+    const displayParts = state.split.chapters.length === 0 && parts.length === 1
+      ? parts.map(part => ({ ...part, role: 'chapter' as const, chapterIndex: 1 })) : parts
+    const nodes: ReactNode[] = displayParts.map((part) => (
       <section key={part.ordinal} data-part-role={part.role} data-chapter-index={part.chapterIndex}>
         {renderPart(tree, part, result)}
       </section>
@@ -113,21 +116,30 @@ export function Reader({ contentSource, documentId, events, slots, apiRef, initi
     const blocks = blocksRef.current
     if (!root || blocks.length === 0) return { chapterIndex: 0, blockId: '' }
 
-    // 二分找「最后一个顶部已滚过视口线」的块
-    const line = root.scrollTop + 120
+    // content-visibility makes each chapter an offset parent. Compare viewport
+    // coordinates within the visible part, rather than unrelated offsetTop values.
+    const line = root.getBoundingClientRect().top + 120
+    const sections = Array.from(root.children).filter((el): el is HTMLElement => el instanceof HTMLElement && el.hasAttribute('data-part-role'))
+    let part = sections[0]
+    for (const section of sections) {
+      if (section.getBoundingClientRect().top > line) break
+      part = section
+    }
+    const visible = part ? blocks.filter(block => part.contains(block.el)) : blocks
+    if (!visible.length) return { chapterIndex: Number(part?.dataset.chapterIndex ?? 0), blockId: '' }
     let lo = 0
-    let hi = blocks.length - 1
+    let hi = visible.length - 1
     let hit = 0
     while (lo <= hi) {
       const mid = (lo + hi) >> 1
-      if (blocks[mid].el.offsetTop <= line) {
+      if (visible[mid].el.getBoundingClientRect().top <= line) {
         hit = mid
         lo = mid + 1
       } else {
         hi = mid - 1
       }
     }
-    const block = blocks[hit]
+    const block = visible[hit]
     return { chapterIndex: blockIndexRef.current.get(block.id)?.chapterIndex ?? 0, blockId: block.id }
   }, [])
 
@@ -143,7 +155,7 @@ export function Reader({ contentSource, documentId, events, slots, apiRef, initi
       raf = requestAnimationFrame(() => {
         raf = 0
         const pos = currentChapter()
-        if (pos.chapterIndex && pos.chapterIndex !== currentChapterRef.current) {
+        if (pos.chapterIndex !== currentChapterRef.current) {
           currentChapterRef.current = pos.chapterIndex
           events.onChapterEnter?.(documentId, pos.chapterIndex)
         }
@@ -156,7 +168,7 @@ export function Reader({ contentSource, documentId, events, slots, apiRef, initi
       root.removeEventListener('scroll', onScroll)
       if (raf) cancelAnimationFrame(raf)
     }
-  }, [events, documentId, currentChapter])
+  }, [events, documentId, currentChapter, rendered])
 
   /** 跳到一个块并把它标记出来（搜索命中定位用）。只加 class，不重跑渲染管线 */
   const scrollToBlock = useCallback((blockId: string) => {
@@ -180,6 +192,22 @@ export function Reader({ contentSource, documentId, events, slots, apiRef, initi
       if (apiRef) apiRef.current = null
     }
   }, [apiRef, currentChapter, scrollToBlock])
+
+  const imageLoader = useMemo(() => {
+    if (!contentSource.loadAsset || state.phase !== 'ready') return undefined
+    const url = contentSource.documentUrl?.(documentId)
+    if (!url) return undefined
+    return async (image: string, signal: AbortSignal): Promise<Uint8Array | undefined> => {
+      const info = await contentSource.documentInfo?.(documentId, signal)
+      const encodedId = (info?.document.path ?? info?.document.id ?? documentId).split('/').map(encodeURIComponent).join('/')
+      const prefix = url.slice(0, -encodedId.length)
+      const parsed = new URL(image)
+      if (image.startsWith(prefix)) return contentSource.loadAsset!(decodeURIComponent(image.slice(prefix.length).split(/[?#]/)[0]), signal)
+      // Compatibility for legacy public /courses references, always checked against the selected manifest.
+      if (parsed.origin === new URL(url).origin && parsed.pathname.startsWith('/courses/')) return contentSource.loadAsset!(decodeURIComponent(parsed.pathname.slice('/courses/'.length)), signal)
+      return undefined
+    }
+  }, [contentSource, documentId, state])
 
   if (state.phase === 'loading') {
     return <div className="reader-status">正在读取…</div>
@@ -259,9 +287,9 @@ export function Reader({ contentSource, documentId, events, slots, apiRef, initi
 
       <article className="reader-body" ref={bodyRef}>
         {slots?.toolbarSlot}
-        <DocumentUrlContext.Provider value={contentSource.documentUrl?.(documentId)}>
+        <ImageLoaderContext.Provider value={imageLoader}><DocumentUrlContext.Provider value={contentSource.documentUrl?.(documentId)}>
           {rendered?.nodes}
-        </DocumentUrlContext.Provider>
+        </DocumentUrlContext.Provider></ImageLoaderContext.Provider>
         <footer className="reader-foot">
           <span>{chapterCount} 章 · 读完</span>
         </footer>

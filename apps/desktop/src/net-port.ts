@@ -12,12 +12,14 @@
  * M1 会把这份实现搬进 packages/app 的端口装配层；现在先留在壳里，因为它还没有消费者之外的角色。
  */
 
+import { browserNet } from '../../../packages/ports/src/index.ts'
 export type NetRequest = {
   url: string
   method?: 'GET' | 'POST'
   headers?: Record<string, string>
   body?: string
   signal?: AbortSignal
+  timeoutMs?: number
 }
 
 export type NetResponse = {
@@ -42,25 +44,8 @@ async function resolveFetch(): Promise<typeof fetch> {
 }
 
 export async function netFetch(req: NetRequest): Promise<NetResponse> {
+  // WebView bundle URLs are served by the shell, not by the OS HTTP client.
+  if ((req.method ?? 'GET') === 'GET' && new URL(req.url).origin === location.origin) return browserNet().fetch(req)
   const doFetch = await resolveFetch()
-
-  const res = await doFetch(req.url, {
-    method: req.method ?? 'GET',
-    headers: req.headers,
-    body: req.body,
-    signal: req.signal,
-  })
-
-  const headers: Record<string, string> = {}
-  res.headers.forEach((value, key) => {
-    headers[key] = value
-  })
-
-  return {
-    ok: res.ok,
-    status: res.status,
-    statusText: res.statusText,
-    headers,
-    body: res.body,
-  }
+  return browserNet(doFetch).fetch(req)
 }

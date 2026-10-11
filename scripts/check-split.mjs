@@ -9,14 +9,16 @@
  *
  * 默认取本地 clone；没有 clone 时提示先 clone 或指定目录。
  */
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { env } from 'node:process'
 
 const { splitDocument } = await import('../packages/reader/src/model/split-document.ts')
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const DEFAULT_DIR = 'D:/project/项目/笔记sikll/课程'
+const DEFAULT_DIR = join(ROOT, '../video2book-courses')
 const dir = process.argv[2] ?? process.env.COURSES_DIR ?? DEFAULT_DIR
 
 if (!existsSync(dir)) {
@@ -160,3 +162,9 @@ if (warnings.length) {
 } else {
   console.log('通过：无告警，章序号与导读逐条对齐。')
 }
+if (env.SPLIT_AUDIT_REPORT) writeFileSync(env.SPLIT_AUDIT_REPORT, JSON.stringify({
+  schema_version: 1, scope: 'structural-audit-only; no editorial or publication approval', stats,
+  status: warnings.length ? 'requires_content_review' : 'passed',
+  warnings: warnings.map(w => ({ path: w.doc.path.slice(dir.length).replace(/^[/\\]/, '').replace(/\\/g, '/'),
+    kind: w.doc.kind, reason: w.text, sha256: createHash('sha256').update(readFileSync(w.doc.path)).digest('hex') })),
+}, null, 2) + '\n')

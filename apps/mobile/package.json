@@ -1,0 +1,32 @@
+{
+  "name": "@app/mobile",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "android:add": "cap add android && node scripts/sync-native.mjs",
+    "android:sync": "cap sync android && node scripts/sync-native.mjs",
+    "android:open": "cap open android"
+  },
+  "dependencies": {
+    "@app/reader": "workspace:*",
+    "@capacitor/core": "^8",
+    "@capacitor/android": "^8",
+    "@capacitor/filesystem": "^8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "katex": "^0.18.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}

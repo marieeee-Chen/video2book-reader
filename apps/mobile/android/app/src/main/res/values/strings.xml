@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">课程精读</string>
+    <string name="title_activity_main">课程精读</string>
+    <string name="package_name">com.linjiang12.coursereader</string>
+    <string name="custom_url_scheme">com.linjiang12.coursereader</string>
+</resources>

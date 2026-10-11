@@ -13,14 +13,17 @@
  */
 process.env.NODE_USE_ENV_PROXY = '1' // Node 的 fetch 默认不读 HTTPS_PROXY，见 scripts/gen-manifest.mjs
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
 const { splitDocument } = await import('../packages/reader/src/model/split-document.ts')
 const { transformDocument } = await import('../packages/reader/src/markdown/transform.ts')
 
 const REPO = process.env.CHECK_REPO ?? 'LINJIANG12/video2book-courses'
-const LOCAL = process.env.CHECK_LOCAL ?? null
+const sibling = fileURLToPath(new URL('../../video2book-courses/', import.meta.url))
+const fixture = fileURLToPath(new URL('./fixtures/reader/', import.meta.url))
+const LOCAL = process.env.CHECK_LOCAL ?? (existsSync(sibling) ? sibling : fixture)
 const [owner, repo] = REPO.split('/')
 
 /**

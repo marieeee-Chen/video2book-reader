@@ -1,5 +1,7 @@
 # 课程精读（Course Reader）
 
+> 2026-10-11 本地实施更新：通用 Agent/插件/端口、固定内容 v3、学习插件、三协议及安卓工程已经落地。运行与验收边界见 [IMPLEMENTATION.md](IMPLEMENTATION.md)。本文中的原在线站和“安卓后续”描述是历史基线，本轮未修改线上站。
+
 把 [video2book-courses](https://github.com/LINJIANG12/video2book-courses) 的课程内容做成可精读的书架与阅读器。
 **一套代码，三种装配**：PC 桌面（主）、静态网页（零安装分发）、安卓（后续）。
 
