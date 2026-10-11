@@ -81,3 +81,8 @@ Windows 在具备 Node22+/pnpm、Rust MSVC/Build Tools、WebView2 的电脑上�
 脚本构建 NSIS 并输出包含课程批次和安装包 SHA 的 `windows-build-receipt.json`；本机 Linux 没有执行过该 Windows 构建。分发的源码包按固定 reader 提交导出，带 `native-source.json`，无需自建 Git 远端；没有附带 node_modules 或密钥。
 
 设置新增可选模型参数 JSON，保存在模型配置中并参与模型身份；数组、无效 JSON 和凭据字段拒绝保存，密钥仍走 SecretPort。GLM 实测参数为 `{"reasoning_effort":"low","max_tokens":4096,"tool_stream":true}`。设备验收表和安装步骤见上述真实课程记录。
+
+
+## 实际 Windows 后续验收（2026-10-11）
+
+已通过 SSH 在 DESKTOP-MTIEUSU / chen_yufeng 上完成 Rust MSVC Release 编译、NSIS 安装，以及真实桌面会话的 13 项原生运行检查：四产品、来源限制、离线 WebView 重载、Windows Credential Store、Stronghold 密钥保存、真实 Tauri HTTP GLM 流和两项学习工具、跨进程线程/密钥恢复。12 项运行时合同也在 Windows 通过。首次原生构建拒绝无效 app-local-data 权限名，修正为 applocaldata 后构建成功，源码固定 b5d5180；冻结课程不变。此前未编译 Windows 的说明是首轮基线。安装包、哈希、日志与逐项 partial 回执见 ../acceptance/20261011-hard-brain-real/README.md；其余原生项目、安卓设备及签名升级仍待验。
