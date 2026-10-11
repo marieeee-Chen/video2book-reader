@@ -540,7 +540,7 @@ export function ReadingApp({ source, readerSlots, readerApiRef, onDocumentChange
           />
         )}
         {route.view === 'reader' && (
-          <VersionedReader contentSource={contentSource} documentId={route.documentId} apiRef={apiRef} slots={readerSlots} events={{ onChapterEnter }} />
+          <VersionedReader key={route.documentId} contentSource={contentSource} documentId={route.documentId} apiRef={apiRef} slots={readerSlots} events={{ onChapterEnter }} />
         )}
       </main>
     </div>
