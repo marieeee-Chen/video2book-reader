@@ -26,14 +26,14 @@ try {
   if (!$OutputDirectory) { $OutputDirectory = Join-Path $readerRoot "windows-demo-output" }
   New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
   foreach ($installer in $installers) { Copy-Item -LiteralPath $installer.FullName -Destination $OutputDirectory }
-  $manifest = Get-Content -LiteralPath (Join-Path $releaseRoot 'manifest.json') -Raw | ConvertFrom-Json
+  $manifest = Get-Content -LiteralPath (Join-Path $releaseRoot 'manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
   $sourceCommit = $null
   $sourceWorktree = @()
   if (Test-Path -LiteralPath (Join-Path $readerRoot '.git')) {
     $sourceCommit = (& git rev-parse HEAD)
     $sourceWorktree = @(& git status --porcelain)
   } elseif (Test-Path -LiteralPath (Join-Path $readerRoot 'native-source.json')) {
-    $sourceCommit = (Get-Content -LiteralPath (Join-Path $readerRoot 'native-source.json') -Raw | ConvertFrom-Json).reader_commit
+    $sourceCommit = (Get-Content -LiteralPath (Join-Path $readerRoot 'native-source.json') -Raw -Encoding UTF8 | ConvertFrom-Json).reader_commit
   }
   $receipt = [ordered]@{
     status = 'compiled_candidate'; device_acceptance = 'pending'; release_id = $manifest.release_id;
@@ -42,7 +42,8 @@ try {
     installers = @($installers | ForEach-Object { [ordered]@{ name=$_.Name; bytes=$_.Length; sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower() } });
     compiled_at = [DateTime]::UtcNow.ToString('o')
   }
-  $receipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'windows-build-receipt.json') -Encoding UTF8
+  $receiptJson = $receipt | ConvertTo-Json -Depth 8
+  [System.IO.File]::WriteAllText((Join-Path $OutputDirectory 'windows-build-receipt.json'), $receiptJson, [System.Text.UTF8Encoding]::new($false))
   Write-Host "Windows candidates and build receipt: $OutputDirectory"
 } finally {
   $env:READER_DEMO_RELEASE = $oldDemo
