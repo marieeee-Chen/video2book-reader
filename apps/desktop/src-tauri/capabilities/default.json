@@ -23,7 +23,7 @@
     "dialog:allow-open",
     "fs:allow-appdata-read-recursive",
     "fs:allow-appdata-write-recursive",
-    "fs:allow-app-local-data-read-recursive",
-    "fs:allow-app-local-data-write-recursive"
+    "fs:allow-applocaldata-read-recursive",
+    "fs:allow-applocaldata-write-recursive"
   ]
 }
