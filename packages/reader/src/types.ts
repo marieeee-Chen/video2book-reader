@@ -40,7 +40,36 @@ export type ContentProvenance = {
   github?: { owner: string; name: string }
 }
 export type AssetSummary = { path: string; bytes: number; sha256: string }
+export type OrganizationMember = {
+  source_availability?: {
+    status: string
+    disposition?: string
+    unlock_labels?: string[]
+    user_reported_unlocked_tier_cny?: number
+  }
+  id: string
+  title: string
+  kind: 'video' | 'article' | 'unknown'
+  document_ids: string[]
+  related_card_ids: string[]
+  product_types?: string[]
+  evidence?: string[]
+  cid?: number
+}
+export type CourseOrganization = {
+  display_title?: string
+  source_scope_summary?: string
+  source_id: string
+  source_name: string
+  collection_id: string
+  collection_title: string
+  registered_course: boolean
+  accepted_delivery: boolean
+  members: OrganizationMember[]
+}
+export type OrganizationStats = { content_cards: number; registered_courses: number; accepted_deliveries: number }
 export type PublicationInfo = {
+  organization?: CourseOrganization
   course_uid?: string
   source_role?: ContentProvenance['role']
   delivery_scope?: string
@@ -107,6 +136,7 @@ export type ManifestCourse = PublicationInfo & {
 }
 
 export type Manifest = {
+  organization_stats?: OrganizationStats
   manifestVersion: number
   release_id?: string
   content_base?: string
@@ -139,6 +169,7 @@ export type TitleHit = {
 
 export type DocumentInfo = { document: DocumentSummary; courseId: string; release_id?: string }
 export type ContentSource = {
+  organizationStats?(): Promise<OrganizationStats | undefined>
   documentInfo?(id: DocumentId, signal?: AbortSignal): Promise<DocumentInfo>
   releaseId?(): Promise<string>
   loadAsset?(path: string, signal?: AbortSignal): Promise<Uint8Array>

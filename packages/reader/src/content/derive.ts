@@ -243,15 +243,11 @@ export function deriveCourses(files: TreeEntry[], readme?: RootReadmeInfo, catal
 }
 
 export function toCourseSummary(course: ManifestCourse) {
+  const { volumes, notes, subtitles, ...metadata } = course
   return {
-    id: course.id,
-    title: course.title,
-    direction: course.direction,
-    publishPath: course.publishPath,
-    categoryPaths: course.categoryPaths,
-    tags: course.tags,
-    volumeCount: course.volumes.length,
-    noteCount: course.notes.length,
-    subtitleCount: course.subtitles.length,
+    ...metadata,
+    volumeCount: volumes.length,
+    noteCount: notes.length,
+    subtitleCount: subtitles.length,
   }
 }

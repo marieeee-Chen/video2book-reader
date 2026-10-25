@@ -107,6 +107,7 @@ export function createReleaseSource(opts: ReleaseSourceOptions): ContentSource {
     return info
   }
   return {
+    async organizationStats() { return (await getManifest()).organization_stats },
     documentInfo,
     async releaseId() { return (await getManifest()).release_id! },
     async listCourses() { return (await getManifest()).courses.map(c => { const { documents: _documents, ...summary } = detail(c); return summary }) },

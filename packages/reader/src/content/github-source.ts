@@ -66,7 +66,7 @@ const RAW = 'https://raw.githubusercontent.com'
 export function createGitHubSource(opts: GitHubSourceOptions): ContentSource {
   const { owner, repo, ref = 'main', manifestUrl, prefer = 'manifest', cache, token, documentBaseUrl } = opts
 
-  type CourseStructure = { courses: ManifestCourse[]; categories: CourseCatalogCategory[] }
+  type CourseStructure = { courses: ManifestCourse[]; categories: CourseCatalogCategory[]; organization_stats?: Manifest['organization_stats'] }
   let structurePromise: Promise<CourseStructure> | null = null
 
   function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
@@ -77,7 +77,7 @@ export function createGitHubSource(opts: GitHubSourceOptions): ContentSource {
     const res = await fetch(manifestUrl!)
     if (!res.ok) throw new Error(`取 manifest 失败：HTTP ${res.status}`)
     const manifest = (await res.json()) as Manifest
-    return { courses: manifest.courses, categories: manifest.categories ?? [] }
+    return { courses: manifest.courses, categories: manifest.categories ?? [], organization_stats: manifest.organization_stats }
   }
 
   async function loadFromTree(): Promise<CourseStructure> {
@@ -180,6 +180,7 @@ export function createGitHubSource(opts: GitHubSourceOptions): ContentSource {
     async listCourses(): Promise<CourseSummary[]> {
       return (await getStructure()).courses.map(toCourseSummary)
     },
+    async organizationStats() { return (await getStructure()).organization_stats },
 
     async listCategories(): Promise<CourseCatalogCategory[]> {
       return (await getStructure()).categories

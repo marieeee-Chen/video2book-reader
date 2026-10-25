@@ -522,6 +522,9 @@ export function ReadingApp({ source, readerSlots, readerApiRef, onDocumentChange
           <Bookshelf
             contentSource={contentSource}
             onOpen={(courseId) => go({ view: 'course', courseId, transcripts: false })}
+            onOpenDocument={(courseId, document) => document.kind === 'subtitle'
+              ? go({ view: 'course', courseId, transcripts: true })
+              : go({ view: 'reader', documentId: document.id })}
             progress={Object.fromEntries(Object.entries(readVolumes).map(([k, v]) => [k, v.size]))}
             defaultReadableOnly={readableOnly}
             onReadableOnlyChange={onReadableOnlyChange}
@@ -586,14 +589,14 @@ function CourseView({
     return (
       <div className="course-loading">
         <div className="loading-spinner" aria-hidden="true" />
-        <p>正在读取课程结构与文件清单…</p>
+        <p>正在读取内容卡片与文件清单…</p>
       </div>
     )
   }
   if (state.phase === 'error') {
     return (
       <div className="reader-status reader-status-error">
-        <p>这门课没读出来。</p>
+        <p>这张内容卡片没读出来。</p>
         <p className="detail">{state.message}</p>
       </div>
     )
@@ -624,7 +627,7 @@ function CourseView({
           {course.review_summary?.limitations.map(limit => <p key={limit} className="course-publication-limit">{limit}</p>)}
           {readCount > 0 && (
             <p className="course-read-stat">
-              已浏览本课 {readCount}/{volumes.length} 册 ({Math.round((readCount / volumes.length) * 100)}%)
+              已浏览正文 {readCount}/{volumes.length} 份 ({Math.round((readCount / volumes.length) * 100)}%)
             </p>
           )}
         </div>
@@ -640,7 +643,7 @@ function CourseView({
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          {zipBusy ? `打包中 ${zip.done}/${zip.total}` : '打包下载整门课'}
+          {zipBusy ? `打包中 ${zip.done}/${zip.total}` : '打包下载当前卡片'}
         </button>
       </header>
 
@@ -648,7 +651,7 @@ function CourseView({
       <div className="course-cols">
         <DocList
           title="正文（教材 / 长文）"
-          hint="按课堂讲授顺序，读起来是连贯的教材"
+          hint="当前卡片的正文与学习成品，按目录顺序排列"
           docs={volumes}
           readSet={readSet}
           onOpen={onOpen}
@@ -695,7 +698,7 @@ function DocList({
       </div>
 
       {docs.length === 0 ? (
-        <div className="doc-empty">这门课没有这一类内容。</div>
+        <div className="doc-empty">当前卡片没有这一类内容。</div>
       ) : (
         <ol className="doc-ol">
           {docs.map((d) => {

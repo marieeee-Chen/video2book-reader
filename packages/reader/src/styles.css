@@ -1117,6 +1117,7 @@ details.callout[open] > summary {
 }
 
 .shelf-group-head {
+  flex-wrap: wrap;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1309,6 +1310,44 @@ details.callout[open] > summary {
 .shelf-dim {
   color: var(--fg-3);
 }
+
+.shelf-view-switch {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.shelf-view-switch button,
+.shelf-members button {
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--layer);
+  color: var(--fg-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.shelf-view-switch button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.shelf-members,
+.shelf-members-empty {
+  margin: 0 0 0.8rem 2.5rem;
+  color: var(--fg-2);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.shelf-members summary { cursor: pointer; padding: 0.3rem 0; }
+.shelf-member { margin-left: 1rem; }
+.shelf-members ul { padding-left: 1.2rem; }
+.shelf-related { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.shelf-members button:focus-visible,
+.shelf-members summary:focus-visible,
+.shelf-view-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 720px) {
   .shelf-layout,

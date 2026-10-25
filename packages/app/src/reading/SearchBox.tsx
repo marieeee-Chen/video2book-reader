@@ -16,8 +16,8 @@ import type { ContentSource, TitleHit } from '@app/reader'
 const PER_GROUP = 8
 
 const GROUP_LABEL: Record<TitleHit['kind'], string> = {
-  course: '课程',
-  volume: '模块全书',
+  course: '内容卡片',
+  volume: '原文',
   note: '复习笔记',
   subtitle: '逐字稿',
 }
@@ -139,7 +139,7 @@ export function SearchBox({
           ref={inputRef}
           type="search"
           className="search-input"
-          placeholder="全库搜索课程、册、笔记..."
+          placeholder="全库搜索卡片、原文、笔记..."
           role="combobox"
           aria-expanded={open && shown.length > 0}
           aria-controls="search-listbox"
@@ -196,7 +196,7 @@ export function SearchBox({
             <div className="search-empty">
               <span className="search-empty-icon" aria-hidden="true">🔍</span>
               <p>未找到与 “{query}” 匹配的内容</p>
-              <span className="search-empty-hint">支持搜索课程名称、模块全书、复习笔记与逐字稿标题</span>
+              <span className="search-empty-hint">支持搜索内容卡片、原文、笔记与逐字稿标题</span>
             </div>
           ) : (
             <>
