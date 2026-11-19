@@ -37,3 +37,7 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# 书架构建产物（本地产出，不提交）
+github-web/dist-shelf-p0/
+github-web/public/courses/
